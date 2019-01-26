@@ -119,7 +119,7 @@ def train():
 
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum,
                           weight_decay=args.weight_decay)
-    criterion = MultiBoxLoss(cfg['num_classes'], 0.5, True, 0, True, 3, 0.5,
+    criterion = MultiBoxLoss(args.batch_size ,cfg['num_classes'], 0.5, True, 0, True, 3, 0.5,
                              False, args.cuda)
 
     net.train()
@@ -139,8 +139,8 @@ def train():
     if args.visdom:
         vis_title = 'SSD.PyTorch on ' + dataset.name
         vis_legend = ['Loc Loss', 'Conf Loss', 'Total Loss']
-        iter_plot = create_vis_plot('Iteration', 'Loss', vis_title, vis_legend)
-        epoch_plot = create_vis_plot('Epoch', 'Loss', vis_title, vis_legend)
+        iter_plot = create_vis_plot(viz, 'Iteration', 'Loss', vis_title, vis_legend)
+        epoch_plot = create_vis_plot(viz, 'Epoch', 'Loss', vis_title, vis_legend)
 
     data_loader = data.DataLoader(dataset, args.batch_size,
                                   num_workers=args.num_workers,
@@ -150,11 +150,12 @@ def train():
     batch_iterator = iter(data_loader)
     for iteration in range(args.start_iter, cfg['max_iter']):
         if args.visdom and iteration != 0 and (iteration % epoch_size == 0):
-            update_vis_plot(epoch, loc_loss, conf_loss, epoch_plot, None,
+            update_vis_plot_epoch(viz, epoch, loc_loss, conf_loss, epoch_plot,
                             'append', epoch_size)
             # reset epoch loss counters
             loc_loss = 0
             conf_loss = 0
+            batch_iterator = iter(data_loader)
             epoch += 1
 
         if iteration in cfg['lr_steps']:
@@ -185,13 +186,13 @@ def train():
 
         if iteration % 10 == 0:
             print('timer: %.4f sec.' % (t1 - t0))
-            print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data[0]), end=' ')
+            print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data[0]), end='')
 
         if args.visdom:
-            update_vis_plot(iteration, loss_l.data[0], loss_c.data[0],
-                            iter_plot, epoch_plot, 'append')
+            update_vis_plot_iter(viz, iteration, loss_l.data[0], loss_c.data[0],
+                            iter_plot, 'append')
 
-        if iteration != 0 and iteration % 5000 == 0:
+        if iteration != 0 and iteration % 500 == 0:
             print('Saving state, iter:', iteration)
             torch.save(ssd_net.state_dict(), 'weights/ssd300_COCO_' +
                        repr(iteration) + '.pth')
@@ -220,7 +221,7 @@ def weights_init(m):
         m.bias.data.zero_()
 
 
-def create_vis_plot(_xlabel, _ylabel, _title, _legend):
+def create_vis_plot(viz,_xlabel, _ylabel, _title, _legend):
     return viz.line(
         X=torch.zeros((1,)).cpu(),
         Y=torch.zeros((1, 3)).cpu(),
@@ -233,22 +234,32 @@ def create_vis_plot(_xlabel, _ylabel, _title, _legend):
     )
 
 
-def update_vis_plot(iteration, loc, conf, window1, window2, update_type,
+
+def update_vis_plot_iter(viz, iteration, loc, conf, window, update_type,
                     epoch_size=1):
     viz.line(
         X=torch.ones((1, 3)).cpu() * iteration,
         Y=torch.Tensor([loc, conf, loc + conf]).unsqueeze(0).cpu() / epoch_size,
-        win=window1,
+        win=window,
         update=update_type
     )
     # initialize epoch plot on first iteration
-    if iteration == 0:
-        viz.line(
-            X=torch.zeros((1, 3)).cpu(),
-            Y=torch.Tensor([loc, conf, loc + conf]).unsqueeze(0).cpu(),
-            win=window2,
-            update=True
-        )
+def update_vis_plot_epoch(viz, epoch, loc, conf, window, update_type,
+                    epoch_size=1):
+    viz.line(
+        X=torch.ones((1, 3)).cpu() * epoch,
+        Y=torch.Tensor([loc, conf, loc + conf]).unsqueeze(0).cpu() / epoch_size,
+        win=window,
+        update=update_type
+    )
+
+    # if iteration == 0:
+    #     viz.line(
+    #         X=torch.zeros((1, 3)).cpu(),
+    #         Y=torch.Tensor([loc, conf, loc + conf]).unsqueeze(0).cpu(),
+    #         win=window2,
+    #         update=True
+    #     )
 
 
 if __name__ == '__main__':
