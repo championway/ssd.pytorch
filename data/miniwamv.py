@@ -20,18 +20,13 @@ if sys.version_info[0] == 2:
 else:
     import xml.etree.ElementTree as ET
 
-VOC_CLASSES = (  # always index 0
-    'aeroplane', 'bicycle', 'bird', 'boat',
-    'bottle', 'bus', 'car', 'cat', 'chair',
-    'cow', 'diningtable', 'dog', 'horse',
-    'motorbike', 'person', 'pottedplant',
-    'sheep', 'sofa', 'train', 'tvmonitor')
+wamv_CLASSES = ('miniwamv','')
 
 # note: if you used our download scripts, this should be right
-VOC_ROOT = osp.join(HOME, "data/VOCdevkit/")
+wamv_ROOT = osp.join(HOME, "data/VOCdevkit/")
 
 
-class VOCAnnotationTransform(object):
+class wamvAnnotationTransform(object):
     """Transforms a VOC annotation into a Tensor of bbox coords and label index
     Initilized with a dictionary lookup of classnames to indexes
 
@@ -46,8 +41,9 @@ class VOCAnnotationTransform(object):
 
     def __init__(self, class_to_ind=None, keep_difficult=False):
         self.class_to_ind = class_to_ind or dict(
-            zip(VOC_CLASSES, range(len(VOC_CLASSES))))
+            zip(wamv_CLASSES, range(len(wamv_CLASSES))))
         self.keep_difficult = keep_difficult
+        print(self.class_to_ind)
     def __call__(self, target, width, height):
         """
         Arguments:
@@ -75,11 +71,11 @@ class VOCAnnotationTransform(object):
             bndbox.append(label_idx)
             res += [bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
             # img_id = target.find('filename').text[:-4]
-
+        #print(res)
         return res  # [[xmin, ymin, xmax, ymax, label_ind], ... ]
 
 
-class VOCDetection(data.Dataset):
+class wamvDetection(data.Dataset):
     """VOC Detection Dataset Object
 
     input is image, target is annotation
@@ -97,8 +93,8 @@ class VOCDetection(data.Dataset):
     """
 
     def __init__(self, root,
-                 image_sets=[('2007', 'trainval'), ('2012', 'trainval')],
-                 transform=None, target_transform=VOCAnnotationTransform(),
+                 image_sets=[('2007', 'train')],
+                 transform=None, target_transform=wamvAnnotationTransform(),
                  dataset_name='VOC0712'):
         self.root = root
         self.image_set = image_sets
@@ -109,7 +105,7 @@ class VOCDetection(data.Dataset):
         self._imgpath = osp.join('%s', 'JPEGImages', '%s.jpg')
         self.ids = list()
         for (year, name) in image_sets:
-            rootpath = osp.join(self.root, 'VOC' + year)
+            rootpath = osp.join(self.root, 'miniwamv1')
             for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
                 self.ids.append((rootpath, line.strip()))
 

@@ -19,10 +19,11 @@ import argparse
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
+print(VOC_ROOT)
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With Pytorch')
 train_set = parser.add_mutually_exclusive_group()
-parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO'],
+parser.add_argument('--dataset', default='VOC', choices=['VOC', 'COCO', 'wamv'],
                     type=str, help='VOC or COCO')
 parser.add_argument('--dataset_root', default=VOC_ROOT,
                     help='Dataset root directory path')
@@ -84,6 +85,12 @@ def train():
             parser.error('Must specify dataset if specifying dataset_root')
         cfg = voc
         dataset = VOCDetection(root=args.dataset_root,
+                               transform=SSDAugmentation(cfg['min_dim'],
+                                                         MEANS))
+    elif args.dataset == 'wamv':
+
+        cfg = wamv
+        dataset = wamvDetection(root=args.dataset_root,
                                transform=SSDAugmentation(cfg['min_dim'],
                                                          MEANS))
 
@@ -156,7 +163,8 @@ def train():
             conf_loss = 0
             batch_iterator = iter(data_loader)
             epoch += 1
-
+        if iteration % epoch_size == 0:
+            batch_iterator = iter(data_loader)
         if iteration in cfg['lr_steps']:
             step_index += 1
             adjust_learning_rate(optimizer, args.gamma, step_index)
@@ -193,7 +201,7 @@ def train():
 
         if iteration != 0 and iteration % 500 == 0:
             print('Saving state, iter:', iteration)
-            torch.save(ssd_net.state_dict(), 'weights/ssd300_COCO_' +
+            torch.save(ssd_net.state_dict(), 'weights/ssd300_wamv_' +
                        repr(iteration) + '.pth')
     torch.save(ssd_net.state_dict(),
                args.save_folder + '' + args.dataset + '.pth')
