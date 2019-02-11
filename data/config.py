@@ -40,6 +40,7 @@ coco = {
     'clip': True,
     'name': 'COCO',
 }
+
 wamv = {
     'num_classes': 3,
     'lr_steps': (280000, 360000, 400000),
