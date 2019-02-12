@@ -3,7 +3,7 @@
 Original author: Francisco Massa
 https://github.com/fmassa/vision/blob/voc_dataset/torchvision/datasets/voc.py
 
-Updated by: Ellis Brown, Max deGroot
+Updated by: David, Chen
 """
 from .config import HOME
 import os.path as osp
@@ -20,13 +20,14 @@ if sys.version_info[0] == 2:
 else:
     import xml.etree.ElementTree as ET
 
-wamv_CLASSES = ('miniwamv','')
+SUBT_CLASSES = (  # always index 0
+    'toolbox', 'radio', 'backpack')
 
 # note: if you used our download scripts, this should be right
-wamv_ROOT = osp.join(HOME, "data/VOCdevkit/")
+SUBT_ROOT = osp.join(HOME, "data/VOCdevkit/")
 
 
-class wamvAnnotationTransform(object):
+class SUBTAnnotationTransform(object):
     """Transforms a VOC annotation into a Tensor of bbox coords and label index
     Initilized with a dictionary lookup of classnames to indexes
 
@@ -41,7 +42,8 @@ class wamvAnnotationTransform(object):
 
     def __init__(self, class_to_ind=None, keep_difficult=False):
         self.class_to_ind = class_to_ind or dict(
-            zip(wamv_CLASSES, range(len(wamv_CLASSES))))
+            zip(SUBT_CLASSES, range(len(SUBT_CLASSES))))
+        print(self.class_to_ind)
         self.keep_difficult = keep_difficult
     def __call__(self, target, width, height):
         """
@@ -70,11 +72,11 @@ class wamvAnnotationTransform(object):
             bndbox.append(label_idx)
             res += [bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
             # img_id = target.find('filename').text[:-4]
-        #print(res)
+
         return res  # [[xmin, ymin, xmax, ymax, label_ind], ... ]
 
 
-class wamvDetection(data.Dataset):
+class SUBTDetection(data.Dataset):
     """VOC Detection Dataset Object
 
     input is image, target is annotation
@@ -92,21 +94,21 @@ class wamvDetection(data.Dataset):
     """
 
     def __init__(self, root,
-                 image_sets=[('2007', 'train')],
-                 transform=None, target_transform=wamvAnnotationTransform(),
-                 dataset_name='wamv'):
+                 image_sets=['train_ann_0'],
+                 transform=None, target_transform=SUBTAnnotationTransform(),
+                 dataset_name='SUBT'):
         self.root = root
         self.image_set = image_sets
         self.transform = transform
         self.target_transform = target_transform
         self.name = dataset_name
-        self._annopath = osp.join('%s', 'Annotations', '%s.xml')
-        self._imgpath = osp.join('%s', 'JPEGImages', '%s.jpg')
+        self._annopath = osp.join('%s.xml')
+        self._imgpath = osp.join('%s.jpg')
         self.ids = list()
-        for (year, name) in image_sets:
-            rootpath = osp.join(self.root, 'miniwamv1')
-            for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
-                self.ids.append((rootpath, line.strip()))
+        for name in image_sets:
+            rootpath = osp.join(self.root, 'subt') # ~/data/subt
+            for line in open(osp.join(rootpath, name + '.txt')):
+                self.ids.append((rootpath, line.strip())) # [~/data/subt, radio/image/frame000002]
 
     def __getitem__(self, index):
         im, gt, h, w = self.pull_item(index)
@@ -117,9 +119,13 @@ class wamvDetection(data.Dataset):
         return len(self.ids)
 
     def pull_item(self, index):
-        img_id = self.ids[index]
+        ann_id = self.ids[index][1]
+        img_split = ann_id.split('/')
+        img_id = img_split[0] + '/' + 'image/' + img_split[2]
+        ann_id = self.ids[index][0] + '/' + ann_id
+        img_id = self.ids[index][0] + '/' + img_id
 
-        target = ET.parse(self._annopath % img_id).getroot()
+        target = ET.parse(self._annopath % ann_id).getroot()
         img = cv2.imread(self._imgpath % img_id)
         height, width, channels = img.shape
 
@@ -147,7 +153,11 @@ class wamvDetection(data.Dataset):
         Return:
             PIL img
         '''
-        img_id = self.ids[index]
+        ann_id = self.ids[index][1]
+        img_split = ann_id.split('/')
+        img_id = img_split[0] + '/' + 'image/' + img_split[2]
+        ann_id = self.ids[index][0] + '/' + ann_id
+        img_id = self.ids[index][0] + '/' + img_id
         return cv2.imread(self._imgpath % img_id, cv2.IMREAD_COLOR)
 
     def pull_anno(self, index):
