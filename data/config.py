@@ -57,9 +57,9 @@ wamv = {
 }
 
 subt = {
-    'num_classes': 4,
-    'lr_steps': (280000, 360000, 400000),
-    'max_iter': 100000,
+    'num_classes': 6,
+    'lr_steps': (4000, 8000, 12000),
+    'max_iter': 15000,
     'feature_maps': [38, 19, 10, 5, 3, 1],
     'min_dim': 300,
     'steps': [8, 16, 32, 64, 100, 300],

@@ -3,7 +3,7 @@
 Original author: Francisco Massa
 https://github.com/fmassa/vision/blob/voc_dataset/torchvision/datasets/voc.py
 
-Updated by: David, Chen
+Updated by: Ellis Brown, Max deGroot
 """
 from .config import HOME
 import os.path as osp
@@ -21,10 +21,13 @@ else:
     import xml.etree.ElementTree as ET
 
 SUBT_CLASSES = (  # always index 0
-    'toolbox', 'radio', 'backpack')
+    'backpack', 'extinguisher', 'radio', 'toolbox', 'valve')
+
+#SUBT_CLASSES = (  # always index 0
+#    'valve', '')
 
 # note: if you used our download scripts, this should be right
-SUBT_ROOT = osp.join(HOME, "data/VOCdevkit/")
+SUBT_ROOT = osp.join(HOME, "data/subt_artifact/")
 
 
 class SUBTAnnotationTransform(object):
@@ -93,7 +96,7 @@ class SUBTDetection(data.Dataset):
     """
 
     def __init__(self, root,
-                 image_sets=['train_ann_0'],
+                 image_sets=['train', 'val'],
                  transform=None, target_transform=SUBTAnnotationTransform(),
                  dataset_name='SUBT'):
         self.root = root
@@ -101,13 +104,13 @@ class SUBTDetection(data.Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.name = dataset_name
-        self._annopath = osp.join('%s.xml')
-        self._imgpath = osp.join('%s.jpg')
+        self._annopath = osp.join('%s', 'Annotations', '%s.xml')
+        self._imgpath = osp.join('%s', 'JPEGImages', '%s.jpg')
         self.ids = list()
         for name in image_sets:
-            rootpath = osp.join(self.root, 'subt') # ~/data/subt
-            for line in open(osp.join(rootpath, name + '.txt')):
-                self.ids.append((rootpath, line.strip())) # [~/data/subt, radio/image/frame000002]
+            rootpath = osp.join(self.root)
+            for line in open(osp.join(rootpath, 'ImageSets', 'Main', name + '.txt')):
+                self.ids.append((rootpath, line.strip()))
 
     def __getitem__(self, index):
         im, gt, h, w = self.pull_item(index)
@@ -118,13 +121,9 @@ class SUBTDetection(data.Dataset):
         return len(self.ids)
 
     def pull_item(self, index):
-        ann_id = self.ids[index][1]
-        img_split = ann_id.split('/')
-        img_id = img_split[0] + '/' + 'image/' + img_split[2]
-        ann_id = self.ids[index][0] + '/' + ann_id
-        img_id = self.ids[index][0] + '/' + img_id
+        img_id = self.ids[index]
 
-        target = ET.parse(self._annopath % ann_id).getroot()
+        target = ET.parse(self._annopath % img_id).getroot()
         img = cv2.imread(self._imgpath % img_id)
         height, width, channels = img.shape
 
@@ -152,11 +151,7 @@ class SUBTDetection(data.Dataset):
         Return:
             PIL img
         '''
-        ann_id = self.ids[index][1]
-        img_split = ann_id.split('/')
-        img_id = img_split[0] + '/' + 'image/' + img_split[2]
-        ann_id = self.ids[index][0] + '/' + ann_id
-        img_id = self.ids[index][0] + '/' + img_id
+        img_id = self.ids[index]
         return cv2.imread(self._imgpath % img_id, cv2.IMREAD_COLOR)
 
     def pull_anno(self, index):
