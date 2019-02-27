@@ -2,6 +2,7 @@ from .voc0712 import VOCDetection, VOCAnnotationTransform, VOC_CLASSES, VOC_ROOT
 from .miniwamv import wamvDetection, wamvAnnotationTransform, wamv_CLASSES, wamv_ROOT
 from .subt_artifact import SUBTDetection, SUBTAnnotationTransform, SUBT_CLASSES, SUBT_ROOT
 from .person_voc import PERSONVOCDetection, PERSONVOCAnnotationTransform, PERSONVOC_CLASSES, PERSONVOC_ROOT
+from .argbot import ARGBOTDetection, ARGBOTAnnotationTransform, ARGBOT_CLASSES, ARGBOT_ROOT
 #from .coco import COCODetection, COCOAnnotationTransform, COCO_CLASSES, COCO_ROOT, get_label_map
 from .config import *
 import torch

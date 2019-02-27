@@ -30,15 +30,15 @@ parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
                     help='Pretrained base model')
 parser.add_argument('--batch_size', default=32, type=int,
                     help='Batch size for training')
-parser.add_argument('--resume', default=None, type=str,
+parser.add_argument('--resume', default=True, type=str,
                     help='Checkpoint state_dict file to resume training from')
-parser.add_argument('--start_iter', default=0, type=int,
+parser.add_argument('--start_iter', default=17501, type=int,
                     help='Resume training at this iter')
 parser.add_argument('--num_workers', default=4, type=int,
                     help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
-parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-3, type=float,
                     help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float,
                     help='Momentum value for optim')
@@ -91,7 +91,7 @@ def train():
         print("PERSON")
         if args.dataset_root == VOC_ROOT:
             parser.error('Must specify dataset if specifying dataset_root')
-        cfg = person
+        cfg = argbot
         dataset = PERSONVOCDetection(root=args.dataset_root,
                                transform=SSDAugmentation(cfg['min_dim'],
                                                          MEANS))
@@ -108,8 +108,8 @@ def train():
         cudnn.benchmark = True
 
     if args.resume:
-        print('Resuming training, loading {}...'.format(args.resume))
-        ssd_net.load_weights(args.resume)
+        print('Resuming training, loading {}...'.format('/home/arg_ws3/ssd.pytorch/weights/person/person_17500.pth'))
+        ssd_net.load_weights('/home/arg_ws3/ssd.pytorch/weights/person/person_17500.pth')
     else:
         vgg_weights = torch.load(args.save_folder + args.basenet)
         print('Loading base network...')
@@ -197,8 +197,9 @@ def train():
         conf_loss += loss_c.item()
 
         if iteration % 10 == 0:
+            lr = get_learning_rate(optimizer)
             print('timer: %.4f sec.' % (t1 - t0))
-            print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.item()), end='')
+            print('iter ' + repr(iteration) + ' || Loss: %.4f || Loss: %.7f ||' % (loss.item(), lr), end='')
 
         if args.visdom:
             update_vis_plot_iter(viz, iteration, loss_l.item(), loss_c.item(),
@@ -209,7 +210,7 @@ def train():
             torch.save(ssd_net.state_dict(), args.save_folder + 'person/person_' +
                        repr(iteration) + '.pth')
     torch.save(ssd_net.state_dict(),
-               args.save_folder + 'person' + '.pth')
+               args.save_folder  + 'person/person.pth')
 
 
 def adjust_learning_rate(optimizer, gamma, step):
@@ -221,6 +222,12 @@ def adjust_learning_rate(optimizer, gamma, step):
     lr = args.lr * (gamma ** (step))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
+def get_learning_rate(optimizer):
+    lr = 0.
+    for param_group in optimizer.param_groups:
+        lr = param_group['lr']
+    return lr
 
 
 def xavier(param):
