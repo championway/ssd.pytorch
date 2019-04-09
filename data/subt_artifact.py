@@ -21,7 +21,7 @@ else:
     import xml.etree.ElementTree as ET
 
 SUBT_CLASSES = (  # always index 0
-    'backpack', 'extinguisher', 'radio', 'toolbox', 'valve')
+    'bb_extinguisher', 'bb_drill')
 
 #SUBT_CLASSES = (  # always index 0
 #    'valve', '')
@@ -57,24 +57,40 @@ class SUBTAnnotationTransform(object):
         """
         res = []
         for obj in target.iter('object'):
-            difficult = int(obj.find('difficult').text) == 1
-            if not self.keep_difficult and difficult:
-                continue
+            #difficult = int(obj.find('difficult').text) == 1
+            #if not self.keep_difficult and difficult:
+            #    continue
             name = obj.find('name').text.lower().strip()
+            if name not in self.class_to_ind:
+                continue
             bbox = obj.find('bndbox')
-
-            pts = ['xmin', 'ymin', 'xmax', 'ymax']
-            bndbox = []
-            for i, pt in enumerate(pts):
-                cur_pt = int(bbox.find(pt).text) - 1
-                # scale height or width
-                cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
-                bndbox.append(cur_pt)
-            label_idx = self.class_to_ind[name]
-            bndbox.append(label_idx)
-            res += [bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
-            # img_id = target.find('filename').text[:-4]
-
+            if bbox is not None:
+                pts = ['xmin', 'ymin', 'xmax', 'ymax']
+                bndbox = []
+                for i, pt in enumerate(pts):
+                    cur_pt = int(bbox.find(pt).text) - 1
+                    # scale height or width
+                    cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
+                    bndbox.append(cur_pt)
+                label_idx = self.class_to_ind[name]
+                bndbox.append(label_idx)
+                res += [bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
+            else: # For LabelMe tool
+                polygons = obj.find('polygon')
+                x = []
+                y = []
+                bndbox = []
+                for polygon in polygons.iter('pt'):
+                    # scale height or width
+                    x.append(int(polygon.find('x').text) / width)
+                    y.append(int(polygon.find('y').text) / height)
+                bndbox.append(min(x))
+                bndbox.append(min(y))
+                bndbox.append(max(x))
+                bndbox.append(max(y))
+                label_idx = self.class_to_ind[name]
+                bndbox.append(label_idx)
+                res += [bndbox]  # [xmin, ymin, xmax, ymax, label_ind]
         return res  # [[xmin, ymin, xmax, ymax, label_ind], ... ]
 
 
@@ -105,7 +121,7 @@ class SUBTDetection(data.Dataset):
         self.target_transform = target_transform
         self.name = dataset_name
         self._annopath = osp.join('%s', 'Annotations', '%s.xml')
-        self._imgpath = osp.join('%s', 'JPEGImages', '%s.jpg')
+        self._imgpath = osp.join('%s', 'image', '%s.jpg')
         self.ids = list()
         for name in image_sets:
             rootpath = osp.join(self.root)

@@ -117,7 +117,7 @@ class SUBTREALDetection(data.Dataset):
         self.target_transform = target_transform
         self.name = dataset_name
         self._annopath = osp.join('%s', 'Annotations', '%s.xml')
-        self._imgpath = osp.join('%s', 'MASKImages', '%s.png')
+        self._imgpath = osp.join('%s', 'JPEGImages', '%s.png')
         self.ids = list()
         for name in image_sets:
             rootpath = osp.join(self.root)
@@ -136,7 +136,11 @@ class SUBTREALDetection(data.Dataset):
         img_id = self.ids[index]
 
         target = ET.parse(self._annopath % img_id).getroot()
-        img = cv2.imread(self._imgpath % img_id)
+        img = cv2.imread(self._imgpath % img_id, cv2.IMREAD_ANYDEPTH)
+        if len(img.shape) == 2: # if it is gray image
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        if img.dtype == np.uint16:
+            img = img/10.
         height, width, channels = img.shape
 
         if self.target_transform is not None:

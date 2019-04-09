@@ -58,7 +58,6 @@ class ARGBOTAnnotationTransform(object):
             #    continue
             name = obj.find('name').text.lower().strip()
             if name not in self.class_to_ind:
-                print(name)
                 continue
             bbox = obj.find('bndbox')
             if bbox is not None:
