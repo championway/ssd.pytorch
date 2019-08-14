@@ -4,6 +4,7 @@ from .subt_artifact import SUBTDetection, SUBTAnnotationTransform, SUBT_CLASSES,
 from .person_voc import PERSONVOCDetection, PERSONVOCAnnotationTransform, PERSONVOC_CLASSES, PERSONVOC_ROOT
 from .argbot import ARGBOTDetection, ARGBOTAnnotationTransform, ARGBOT_CLASSES, ARGBOT_ROOT
 from .subt_real import SUBTREALDetection, SUBTREALAnnotationTransform, SUBTREAL_CLASSES, SUBTREAL_ROOT
+from .mmfcn import MMFCNDetection, MMFCNAnnotationTransform, MMFCN_CLASSES, MMFCNREAL_ROOT
 #from .coco import COCODetection, COCOAnnotationTransform, COCO_CLASSES, COCO_ROOT, get_label_map
 from .config import *
 import torch
